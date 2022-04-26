@@ -140,12 +140,11 @@ GtkMorphicEventHandler >> handleEvent: anEvent [
 	| morphicEvent |
 	
 	morphicEvent := anEvent accept: self.
-	morphicEvent isMorphicEvent ifFalse: [ ^ false ].	
+	morphicEvent isMorphicEvent ifFalse: [^ false ].	
 	
 	self evaluateUserInterrupt: anEvent.
 
 	self dispatchMorphicEvent: morphicEvent.
-
 	^ morphicEvent wasHandled
 ]
 
@@ -181,7 +180,7 @@ GtkMorphicEventHandler >> processKeyDownEvent: anEvent modifiers: modifiers [
 	| keyDownEvent keyValue |
 
 	keyValue := self mapSymbolToKeyValue: anEvent symbol.
-	keyValue = 0 ifTrue: [ ^ self ].
+	keyValue = 0 ifTrue: [  ^ self ].
 	
 	keyDownEvent := KeyboardEvent new
 		setType: #keyDown
@@ -217,7 +216,7 @@ GtkMorphicEventHandler >> processKeystrokeEvent: anEvent modifiers: modifiers [
 { #category : #visiting }
 GtkMorphicEventHandler >> visitKeyDownEvent: anEvent [
 	| modifiers |
-
+	'visitKeyDownEvent:' traceCr.
 	modifiers := self convertModifiers: anEvent modifiers.
 	self processKeyDownEvent: anEvent modifiers: modifiers.
 	self processKeystrokeEvent: anEvent modifiers: modifiers
@@ -226,7 +225,7 @@ GtkMorphicEventHandler >> visitKeyDownEvent: anEvent [
 { #category : #visiting }
 GtkMorphicEventHandler >> visitKeyUpEvent: anEvent [
 	| keyUpEvent keyValue |
-
+	'visitKeyUpEvent:' traceCr.
 	keyValue := self mapSymbolToKeyValue: anEvent symbol.
 	keyValue = 0 ifTrue: [ ^ self ].
 	
@@ -241,8 +240,7 @@ GtkMorphicEventHandler >> visitKeyUpEvent: anEvent [
 	keyUpEvent
 		scanCode: anEvent scanCode;
 		key: anEvent key.
-	
-	self dispatchMorphicEvent: keyUpEvent
+		self dispatchMorphicEvent: keyUpEvent
 ]
 
 { #category : #visiting }
@@ -253,9 +251,18 @@ GtkMorphicEventHandler >> visitMouseButtonPressEvent: anEvent [
 	 click from two single clicks. 
 	 In order to make the world work properly, I need to let morphic do its interpretation (even 
 	 if is worst)"
-	anEvent isDoubleClick ifTrue: [ ^ self ].
+	anEvent isDoubleClick ifTrue: [^ self ].
 	GRunLoop defer: [ self imContext reset ].
 	^ super visitMouseButtonPressEvent: anEvent
+]
+
+{ #category : #visiting }
+GtkMorphicEventHandler >> visitMouseButtonReleaseEvent: anEvent [
+
+	| event |
+	event := super visitMouseButtonReleaseEvent: anEvent.
+	INC := event.
+	^ event
 ]
 
 { #category : #visiting }

@@ -5,18 +5,15 @@ Class {
 	#name : #GtkMorphView,
 	#superclass : #GtkMorphicDrawingArea,
 	#instVars : [
-		'morph',
 		'activeSurface',
 		'drawQueued',
 		'damageRecorder',
-		'morphResizable',
 		'activeHand',
 		'alarms',
-		'steps',
 		'layeredMorphs',
 		'kmDispatcher',
-		'lastRequestedSize',
-		'updating'
+		'updating',
+		'morphicRoot'
 	],
 	#category : #'Gtk-Morphic'
 }
@@ -292,15 +289,6 @@ GtkMorphView >> activateCursor: aCursor withMask: aForm [
 	self flag: #TODO.
 ]
 
-{ #category : #'world simulation' }
-GtkMorphView >> activeHand [
-	
-	^ activeHand ifNil: [ 
-		activeHand := HandMorph new 
-			privateOwner: self;
-			yourself ]
-]
-
 { #category : #private }
 GtkMorphView >> activeSurface [
 	
@@ -330,48 +318,10 @@ GtkMorphView >> addAlarm: aSelector withArguments: argArray for: aTarget at: sch
 	newAlarm schedule
 ]
 
-{ #category : #'world simulation' }
-GtkMorphView >> addMorphFront: aMorph [
-	
-	self addMorphInFrontOfLayer: aMorph
-]
-
-{ #category : #'world simulation' }
-GtkMorphView >> addMorphInFrontOfLayer: aMorph [
-
-	layeredMorphs add: aMorph.
-	aMorph privateOwner: self.
-
-	self invalidateRect: aMorph fullBounds
-]
-
-{ #category : #'world simulation' }
-GtkMorphView >> beCursorOwner [
-	
-]
-
-{ #category : #accessing }
+{ #category : #configuration }
 GtkMorphView >> beMorphNotResizable [
-
-	self morphResizable: false
-]
-
-{ #category : #accessing }
-GtkMorphView >> beMorphResizable [
-
-	self morphResizable: true
-]
-
-{ #category : #'world simulation' }
-GtkMorphView >> becomeActiveDuring: aBlock [
 	
-	aBlock value
-]
-
-{ #category : #'world simulation' }
-GtkMorphView >> bounds [ 
-
-	^ self morph bounds
+	morphicRoot beMorphNotResizable
 ]
 
 { #category : #private }
@@ -382,20 +332,13 @@ GtkMorphView >> canDraw [
 
 { #category : #'world simulation' }
 GtkMorphView >> colorForInsets [
-	
-	^ Color transparent
-]
-
-{ #category : #'world simulation' }
-GtkMorphView >> convertWindowMouseEventPosition: aPoint [ 
-	
-	^ aPoint
+	^ Color transparent  
 ]
 
 { #category : #initialization }
 GtkMorphView >> createEventHandler [
 
-	^ GtkMorphicEventHandler for: self world
+	^ GtkMorphicEventHandler for: morphicRoot 
 ]
 
 { #category : #'world simulation' }
@@ -437,13 +380,12 @@ GtkMorphView >> draw: cr [
 	ensure: [ 
 		drawing := false.
 		drawQueued := false ].
-
+	
 	^ true
 ]
 
 { #category : #'private - events' }
 GtkMorphView >> handleEvent: event [
-
 	self morph ifNil: [ ^ false ].
 	^ super handleEvent: event
 
@@ -454,60 +396,18 @@ GtkMorphView >> handleEvent: event [
 GtkMorphView >> initialize [ 
 
 	super initialize.
-	self beMorphResizable.
+	morphicRoot := MorphicRoot new.
+	morphicRoot container: self.
+
+	morphicRoot beMorphResizable.
 
 	drawQueued := false.
 	drawing := false.
-	damageRecorder := DamageRecorder new.	
-	layeredMorphs := OrderedCollection new: 1.
+	
 	eventHandler := self createEventHandler.
-	updating := false
-]
-
-{ #category : #'private - updating' }
-GtkMorphView >> intersectingMorphs: aMorph within: aRect [
-	| morphs |
+	updating := false.
 	
-	aMorph fullBounds = aRect
-		ifTrue: [ ^ { aMorph } ].
-	
-	morphs := OrderedCollection new.
-	aMorph submorphsDo: [ :submorph | | bounds |
-		bounds := submorph fullBounds.
-		(bounds intersects: aRect) ifTrue: [
-			((bounds ~= aRect) and: [ bounds containsRect: aRect ])
-				ifTrue: [ morphs addAll: (self intersectingMorphs: submorph within: aRect) ]
-				ifFalse: [ morphs add: submorph ] ] ].
-		
-	aRect
-		allAreasOutsideList: (morphs collect: [ :each | each fullBounds ])
-		do: [ :eachArea | ^ { aMorph } ].
-
-	^ morphs reversed
-]
-
-{ #category : #'private - updating' }
-GtkMorphView >> intersectingMorphsWithin: aRect [
-	| allMorphs intersectingMorphs |
-	
-	intersectingMorphs := OrderedCollection new.
-	allMorphs := layeredMorphs copyWithFirst: self morph.
-	allMorphs do: [ :eachMorph |
-		eachMorph fullBounds = aRect ifTrue: [ ^ { eachMorph } ].
-	
-		intersectingMorphs := OrderedCollection new.
-		eachMorph submorphsDo: [ :submorph | | bounds |
-			bounds := submorph fullBounds.
-			(bounds intersects: aRect) ifTrue: [
-				((bounds ~= aRect) and: [ bounds containsRect: aRect ])
-					ifTrue: [ intersectingMorphs addAll: (self intersectingMorphs: submorph within: aRect) ]
-					ifFalse: [ intersectingMorphs add: submorph ] ] ] ].
-	
-	aRect
-		allAreasOutsideList: (intersectingMorphs collect: [ :each | each fullBounds ])
-		do: [ :eachArea | ^ { self morph } ].
-		
-	^ intersectingMorphs	reversed
+	self connectDestroy: [ morphicRoot destroy ]	
 ]
 
 { #category : #'world simulation' }
@@ -521,33 +421,13 @@ GtkMorphView >> invalidRect: damageRect from: aMorph [
 { #category : #accessing }
 GtkMorphView >> invalidate [
 
-	self invalidate: true
-]
-
-{ #category : #private }
-GtkMorphView >> invalidate: needQueue [
-
-	damageRecorder doFullRepaint.
-	needQueue ifTrue: [ self queueDraw ]
-]
-
-{ #category : #accessing }
-GtkMorphView >> invalidateRect: damageRect [
-
-	damageRecorder recordInvalidRect: damageRect.
-	self queueDrawArea: damageRect
+	morphicRoot invalidate
 ]
 
 { #category : #'world simulation' }
 GtkMorphView >> isCursorOwner [
 
 	^ true
-]
-
-{ #category : #testing }
-GtkMorphView >> isMorphResizable [
-
-	^ morphResizable
 ]
 
 { #category : #'private - testing' }
@@ -570,44 +450,19 @@ GtkMorphView >> layoutChanged [
 { #category : #accessing }
 GtkMorphView >> morph [
 
-	^ morph
+	^ morphicRoot morph
 ]
 
 { #category : #accessing }
 GtkMorphView >> morph: aMorph [
-	| needQueue |
-
-	needQueue := false.
-	morph ifNotNil: [ 
-		self stopStepping.
-		"if we are replacing a morph, we will need to transmit to the new morph some properties. 
-		 Also, we will need to force a queue"
-		(self isMorphResizable and: [ aMorph extent < morph extent ]) 
-			ifTrue: [ aMorph extent: morph extent ].
-		needQueue := true ].
 	
-	morph := aMorph asMorph.
-	"I will be the owner (and I will act as a world)"
-	morph privateOwner: self.
-	"in this view, position of the morph is always 0@0"
-	morph position: 0@0.
-	"check for the need of steppiong stepping"
-	morph wantsSteps ifTrue: [ self startStepping: morph ].
-
-	self sizeRequest: aMorph extent.
-	self invalidate: needQueue
-]
-
-{ #category : #private }
-GtkMorphView >> morphResizable: aBoolean [
-
-	morphResizable := aBoolean
+	morphicRoot morph: aMorph
 ]
 
 { #category : #testing }
 GtkMorphView >> needUpdate [
 
-	^ damageRecorder updateIsNeeded
+	^ morphicRoot needUpdate
 ]
 
 { #category : #private }
@@ -629,8 +484,10 @@ GtkMorphView >> owner [
 
 { #category : #'private - updating' }
 GtkMorphView >> paintMorph: aMorph [
-	| cr position morphSurface |
-	
+
+	^ morphicRoot paintMorph: aMorph.
+	"| cr position morphSurface |
+	'je veux dessiner' trace. aMorph traceCr.
 	position := aMorph position.
 	morphSurface := self newSurfaceOfMorph: aMorph.
 	cr := self cairoCreate: self activeSurface getHandle.
@@ -642,25 +499,13 @@ GtkMorphView >> paintMorph: aMorph [
 			y: position y asFloat.
 		self paint: cr ]
 	ensure: [ 
-		self cairoDestroy: cr ]
+		self cairoDestroy: cr ]"
 ]
 
 { #category : #'world simulation' }
 GtkMorphView >> paneColorOrNil [
 	
-	^ nil
-]
-
-{ #category : #'world simulation' }
-GtkMorphView >> privateRemove: aMorph [
 	
-	^ aMorph
-]
-
-{ #category : #'world simulation' }
-GtkMorphView >> processEvent: anEvent [
- 
-	^ self morph processEvent: anEvent
 ]
 
 { #category : #'world simulation' }
@@ -677,90 +522,16 @@ GtkMorphView >> removeAlarm: aSelector for: aTarget [
 ]
 
 { #category : #'world simulation' }
-GtkMorphView >> removeMorph: aMorph [ 
-	
-	(layeredMorphs includes: aMorph) ifFalse: [ ^ self ].
-	
-	layeredMorphs remove: aMorph.
-	self invalidateRect: aMorph fullBounds
-]
-
-{ #category : #'world simulation' }
 GtkMorphView >> removedMorph: aMorph [
 ]
 
 { #category : #private }
 GtkMorphView >> resizeIfEnabledTo: extent [
 
-	self isMorphResizable ifFalse: [ ^ self ].
+	morphicRoot isMorphResizable ifFalse: [ ^ self ].
 	self morph ifNil: [ ^ self ].
 	self updatingWhile: [
-		lastRequestedSize := extent.
-		self morph extent: extent ]
-]
-
-{ #category : #'world simulation' }
-GtkMorphView >> sizeRequest: anExtent [
-
-	lastRequestedSize = anExtent ifTrue: [ ^ self ].
-	super sizeRequest: anExtent. 
-	lastRequestedSize := anExtent
-]
-
-{ #category : #'world simulation' }
-GtkMorphView >> startStepping: aMorph [
-
-	self 
-		startStepping: aMorph 
-		at: Time millisecondClockValue 
-		selector: #stepAt: 
-		arguments: nil 
-		stepTime: nil
-]
-
-{ #category : #'world simulation' }
-GtkMorphView >> startStepping: aMorph at: scheduledTime selector: aSelector arguments: args stepTime: stepTime [
-	"Add the given morph to the step list. Do nothing if it is already being stepped."
-	| newStep |
-
-	self stopStepping: aMorph selector: aSelector.
-	
-	newStep := GtkStepMessage 
-		scheduledAt: scheduledTime
-		stepTime: stepTime
-		receiver: aMorph
-		selector: aSelector
-		arguments: args.
-		
-	steps ifNil: [ steps := Set new ].
-	steps add: newStep.
-	
-	newStep schedule.
-	
-	self connectDestroy: [ 
-		self stopStepping ]
-]
-
-{ #category : #'world simulation' }
-GtkMorphView >> stopStepping [
-	
-	steps ifNil: [ ^ self ].
-	
-	steps do: [ :each | each cancel ].
-	steps := nil
-]
-
-{ #category : #'world simulation' }
-GtkMorphView >> stopStepping: aMorph selector: aSelector [
-	
-	steps ifNil: [ ^ self ].
-	
-	(steps 
-		removeAll: (steps 
-			select:[ :each | 
-				each receiver == aMorph 
-				and: [ each selector == aSelector ] ]))
-		do: [ :each | each cancel ]
+		morphicRoot extent: extent ]
 ]
 
 { #category : #'world simulation' }
@@ -769,52 +540,15 @@ GtkMorphView >> theme [
 	^ Smalltalk ui theme
 ]
 
-{ #category : #'world simulation' }
-GtkMorphView >> transformFrom: aMorph [ 
-	
-	^ IdentityTransform new
-]
-
-{ #category : #'private - updating' }
-GtkMorphView >> updateAllSurface [
-
-	self activeSurface: (self newSurfaceOfMorph: self morph).
-	layeredMorphs do: [ :each |
-		self paintMorph: each ]
-]
-
 { #category : #'private - updating' }
 GtkMorphView >> updateSurface [
-	| rects |
+	| newSurface |
 	
-	self flag: #TODO. "Do not use the nil HACK here (add a method to DamageRecorder to know if 
-	I need to redraw all instead)."
-	rects := damageRecorder invalidRectsFullBounds: nil.
-	damageRecorder reset.
-	rects first 
-		ifNotNil: [ self updateSurfaceRectangles: rects ]
-		ifNil: [ self updateAllSurface ]
-]
-
-{ #category : #'private - updating' }
-GtkMorphView >> updateSurfaceRectangles: aCollection [
-    | rect |
-
-	rect := aCollection size = 1
-		ifTrue: [ aCollection anyOne ]
-		ifFalse: [ Rectangle merging: aCollection ].
-		
-	self activeSurface ifNotNil: [
-		activeSurface drawDuring: [ :canvas |
-			canvas paintMode clear.
-			canvas
-				setPaint: Color transparent;
-				setShape: rect;
-				draw ] ].
-
-	(self intersectingMorphsWithin: rect) do: [ :eachMorph |
-		eachMorph = self morph ifTrue: [ ^ self updateAllSurface ].
-		self paintMorph: eachMorph ]
+	newSurface := AthensCairoSurface extent: self morph extent.
+	newSurface drawDuring: [ :canvas |
+		canvas pathTransform translateBy: self morph position negated.
+		self morph fullDrawOnAthensCanvas: canvas ].
+	self activeSurface: newSurface
 ]
 
 { #category : #'private - updating' }
@@ -839,21 +573,20 @@ GtkMorphView >> withAllOwnersDo: aBlock [
 	aBlock value: self
 ]
 
-{ #category : #'world simulation' }
-GtkMorphView >> world [
-	"I'm simulating being a world"
+{ #category : #accessing }
+GtkMorphView >> world [ 
 
-	^ self
+^ morphicRoot world
 ]
 
-{ #category : #'world simulation' }
+{ #category : #hands }
 GtkMorphView >> worldRenderer [
 	
-	^ self
+	^ morphicRoot worldRenderer 
 ]
 
-{ #category : #'world simulation' }
+{ #category : #'as yet unclassified' }
 GtkMorphView >> worldState [
 	
-	^ self
+	^ morphicRoot worldState 
 ]

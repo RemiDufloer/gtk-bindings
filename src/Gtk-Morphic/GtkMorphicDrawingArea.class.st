@@ -267,6 +267,7 @@ GtkMorphicDrawingArea >> cairoCreate: target [
 	^ self 
 		ffiCall: #("cairo_t"void *cairo_create ("cairo_surface_t"void *target))
 		module: CairoLibrary
+		
 ]
 
 { #category : #'private primitives' }
@@ -346,7 +347,7 @@ GtkMorphicDrawingArea >> handleEvent: event [
 GtkMorphicDrawingArea >> initialize [ 
 
 	super initialize.
-	self canFocus: true
+	self canFocus: true.
 ]
 
 { #category : #accessing }
@@ -388,7 +389,8 @@ GtkMorphicDrawingArea >> queueDrawArea: rect [
 { #category : #initialization }
 GtkMorphicDrawingArea >> registerToEvents [
 
-	self registerToAllEvents
+	self registerToAllEvents.
+	
 ]
 
 { #category : #private }

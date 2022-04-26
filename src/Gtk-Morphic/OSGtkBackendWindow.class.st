@@ -85,6 +85,7 @@ OSGtkBackendWindow >> ifWindowIsNotValid: aBlock [
 OSGtkBackendWindow >> initialize [
 
 	super initialize.
+	self world: MorphicRoot new.
 	self initializeCursorMap
 ]
 

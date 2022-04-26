@@ -240,7 +240,6 @@ GdkEventKey >> isEventKey [
 
 { #category : #testing }
 GdkEventKey >> isKeyDown [
-
 	^ self keyValue = KEY_Down
 ]
 
@@ -270,7 +269,7 @@ GdkEventKey >> isKeyRight [
 
 { #category : #testing }
 GdkEventKey >> isKeyUp [
-
+	
 	^ self keyValue = KEY_Up
 ]
 

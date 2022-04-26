@@ -18,6 +18,6 @@ GdkEventKeyPress >> accept: aVisitor [
 
 { #category : #testing }
 GdkEventKeyPress >> isKeyPress [
-
+	
 	^ true
 ]

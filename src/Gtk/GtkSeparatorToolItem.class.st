@@ -35,7 +35,7 @@ GtkSeparatorToolItem >> draw: draw [
 { #category : #initialization }
 GtkSeparatorToolItem >> initialize [ 
 	super initialize.
-	self draw: true
+	self draw: true 
 ]
 
 { #category : #testing }

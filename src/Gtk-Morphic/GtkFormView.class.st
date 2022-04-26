@@ -55,9 +55,9 @@ GtkFormView >> form: aForm [
 
 { #category : #'private events' }
 GtkFormView >> handleEvent: anEvent [
-
+	
 	anEvent type = GdkEventType GDK_ENTER_NOTIFY 
-		ifTrue: [ self grabFocus ].
+		ifTrue: [ self grabFocus].
 	^ super handleEvent: anEvent
 ]
 
@@ -70,7 +70,6 @@ GtkFormView >> invalidate [
 
 { #category : #accessing }
 GtkFormView >> invalidateRect: damageRect [
-
 	self updateSurfaceRectangle: damageRect.
 	self queueDrawArea: damageRect
 ]
