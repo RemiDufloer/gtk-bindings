@@ -324,6 +324,12 @@ GtkMorphView >> beMorphNotResizable [
 	morphicRoot beMorphNotResizable
 ]
 
+{ #category : #configuration }
+GtkMorphView >> beMorphResizable [
+	
+	morphicRoot beMorphResizable
+]
+
 { #category : #private }
 GtkMorphView >> canDraw [
 
@@ -405,9 +411,9 @@ GtkMorphView >> initialize [
 	drawing := false.
 	
 	eventHandler := self createEventHandler.
-	updating := false.
+	updating := true.
 	
-	self connectDestroy: [ morphicRoot destroy ]	
+	self connectDestroy: [ morphicRoot destroy ]	.
 ]
 
 { #category : #'world simulation' }
@@ -530,8 +536,7 @@ GtkMorphView >> resizeIfEnabledTo: extent [
 
 	morphicRoot isMorphResizable ifFalse: [ ^ self ].
 	self morph ifNil: [ ^ self ].
-	self updatingWhile: [
-		morphicRoot extent: extent ]
+	self updatingWhile: [ morphicRoot extent: extent ]
 ]
 
 { #category : #'world simulation' }

@@ -215,8 +215,9 @@ GtkMorphicEventHandler >> processKeystrokeEvent: anEvent modifiers: modifiers [
 
 { #category : #visiting }
 GtkMorphicEventHandler >> visitKeyDownEvent: anEvent [
+
 	| modifiers |
-	'visitKeyDownEvent:' traceCr.
+	
 	modifiers := self convertModifiers: anEvent modifiers.
 	self processKeyDownEvent: anEvent modifiers: modifiers.
 	self processKeystrokeEvent: anEvent modifiers: modifiers
@@ -224,23 +225,25 @@ GtkMorphicEventHandler >> visitKeyDownEvent: anEvent [
 
 { #category : #visiting }
 GtkMorphicEventHandler >> visitKeyUpEvent: anEvent [
+
 	| keyUpEvent keyValue |
-	'visitKeyUpEvent:' traceCr.
+	
 	keyValue := self mapSymbolToKeyValue: anEvent symbol.
 	keyValue = 0 ifTrue: [ ^ self ].
-	
+
 	keyUpEvent := KeyboardEvent new
-		setType: #keyUp
-		buttons: (self convertModifiers: anEvent modifiers)
-		position: (self convertPosition: anEvent position asIntegerPoint)
-		keyValue: keyValue
-		charCode: keyValue
-		hand:  self activeHand
-		stamp: Time millisecondClockValue.
+		              setType: #keyUp
+		              buttons: (self convertModifiers: anEvent modifiers)
+		              position:
+		              (self convertPosition: anEvent position asIntegerPoint)
+		              keyValue: keyValue
+		              charCode: keyValue
+		              hand: self activeHand
+		              stamp: Time millisecondClockValue.
 	keyUpEvent
 		scanCode: anEvent scanCode;
 		key: anEvent key.
-		self dispatchMorphicEvent: keyUpEvent
+	self dispatchMorphicEvent: keyUpEvent
 ]
 
 { #category : #visiting }
